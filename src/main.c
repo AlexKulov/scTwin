@@ -1,7 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include "cJSON.h"
+
+#ifndef FALSE
+    #define FALSE (0)
+    #define TRUE (1)
+#endif
 
 /*
  * read file to char *
@@ -69,20 +75,45 @@ static long fileCopy(const char *srcFileName, const char *dstFileName){
     return 1;
 }
 
-int main(int32_t argc, char** argv){
-    /* 1. Считываем файл конфигурации */
-    char * jsonText = fileRead("configs.json");
-    cJSON * cJsonExample = cJSON_Parse(jsonText);
-    char * resTest = cJSON_Print(cJsonExample);
-    /*printf("%s", resTest);*/
+static void briefShowBaseAll(cJSON * configs, uint32_t configSize){
+
+}
+
+static void execSingleBaseConfig(cJSON * configs, uint32_t configSize, uint32_t idNum){
+    cJSON * curConfig = NULL;
+    for(uint32_t i=0;i<configSize;i++){
+        //Satellite sat={0};
+        curConfig = cJSON_GetArrayItem(configs, i);
+        cJSON * jID = cJSON_GetObjectItem(curConfig, "ID");
+        int32_t curID = cJSON_GetNumberValue(jID);
+        if((uint32_t)curID == idNum){
+            break;
+        }
+        else{
+            curConfig = NULL;
+        }
+    }
+    if(!curConfig){
+        printf("Have't config with ID=%i", idNum);
+        exit(1);
+    }
 
     /* 2. Форминеум соответствующую папку ИД - ConfigInOut */
     /*CopyFile(..., ..., 0/1): 0-перезапись, 1-только новый*/
+    cJSON * param = cJSON_GetObjectItem(curConfig, "SC");
+    char name[256];
+    strcpy(name, cJSON_GetStringValue(param));
+    char pathFrom[256], pathTo[256];
+    sprintf(pathFrom, "./scConfig/out42/SC_%s.txt", name);
+    sprintf(pathTo, "./configInOut/SC_%s.txt", name);
     long
-    copyRes = fileCopy("./scConfig/out42/SC_2Whl.txt",
-                       "./configInOut/SC_2Whl.txt");
-    copyRes = fileCopy("./scConfig/out42/Orb_LEO.txt",
-                       "./configInOut/Orb_LEO.txt");
+    copyRes = fileCopy(pathFrom, pathTo);
+
+    param = cJSON_GetObjectItem(curConfig, "Orb");
+    strcpy(name, cJSON_GetStringValue(param));
+    sprintf(pathFrom, "./scConfig/out42/Orb_%s.txt", name);
+    sprintf(pathTo, "./configInOut/Orb_%s.txt", name);
+    copyRes = fileCopy(pathFrom, pathTo);
 
     /* 3. Изменяем twin42.pro */
 
@@ -100,6 +131,38 @@ int main(int32_t argc, char** argv){
             "mingw32-make -C %s", buildPath);
     system(winCmd);
     system("..\\42\\42twin.exe configInOut ..\\42\\Model");
+    return;
+}
+
+int main(int32_t argc, char** argv){
+
+    long isID = FALSE;
+    char * ID = NULL;
+    uint32_t idNum = 0;
+    if(argc>1){
+        for(int i=1;i<argc;i++){
+            ID = strstr(argv[i],"ID");
+            if(ID && ID[2] == '='){
+                idNum = atoi(&ID[3]);
+                isID = TRUE;
+                break;
+            }
+        }
+    }
+    /* 1. Считываем файл конфигурации */
+    char * jsonText = fileRead("twBase.json");
+    cJSON * twBase = cJSON_Parse(jsonText);
+    cJSON * configs = cJSON_GetObjectItem(twBase, "configs");
+    uint32_t configSize = cJSON_GetArraySize(configs);
+    //char * resTest = cJSON_Print(twBase);
+    //printf("%s", resTest);
+
+    if(isID){
+        execSingleBaseConfig(configs, configSize, idNum);
+    }
+    else{
+        briefShowBaseAll(configs, configSize);
+    }
 
     return 0;
 }
