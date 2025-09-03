@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "cJSON.h"
 
+#include "../sctwin.h"
 /*
  * read file to char *
  */
@@ -49,11 +50,54 @@ static char* fileRead(const char *filename) {
     return content;
 }
 
+static long fileCopy(const char *srcFileName, const char *dstFileName){
+    char * srcText = fileRead(srcFileName);
+    if(srcText){
+        FILE * dstFile = fopen(dstFileName,"w");
+        fprintf(dstFile, srcText);
+        fclose(dstFile);
+        return 1;
+    }
+    else{
+        printf("fileCopy: srcFile=%s not exidt!\n", srcFileName);
+    }
+    return 0;
+}
+
+extern void scJson2Txt42(cJSON * scJson,
+                         char * tempName, char * outName);
 int main(int32_t argc, char** argv){
 
-    char * jsonExample = fileRead("acos/dev/trackers.json");
-    cJSON * test = cJSON_Parse(jsonExample);
+    //1. При запуске вводим имя файла, который хотим сконфигурировать
+    if(argc>0){
+        string  filePath;
+        sprintf(filePath, "./acos/%s.json", argv[1]);
+        char * scJsonFile = fileRead(filePath); //"acos/dev/trackers.json"
 
-    printf("%s", jsonExample);
+        if(scJsonFile){//1.1 если файл json существует
+            //2. Копируем шаблон с нужным именем
+            string pathFrom, pathTo;
+            sprintf(pathFrom, "./out42/SC_Template.txt");
+            sprintf(pathTo  , "./out42/SC_%s.txt", argv[1]);
+
+            //long
+            //wasCopy = fileCopy(pathFrom, pathTo);
+
+            //3. Парсим json
+            cJSON * scJson = cJSON_Parse(scJsonFile);
+            FILE * sc42File = fopen(pathTo, "r");
+            //scJson2Txt42(scJson, sc42File);
+            scJson2Txt42(scJson, pathFrom, pathTo);
+            fclose(sc42File);
+
+
+            //printf("%s", jsonExample);
+        }
+        else
+            printf("Json file name is incorrect = %s\n",argv[1]);
+    }
+    else
+        printf("Please, enter json file name\n");
+
     return 0;
 }

@@ -2,13 +2,17 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
-QMAKE_CFLAGS += -std=c89
+QMAKE_CFLAGS += -std=c99
 
 INCLUDEPATH += \
     ../cJSON
 
 SOURCES += \
     ../cJSON/cJSON.c \
-    src/main.c
+    src/main.c \
+    src/scJson2Txt42.c
 
 OBJECTS_DIR = ./debug
+
+HEADERS += \
+    ../sctwin.h

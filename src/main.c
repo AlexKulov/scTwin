@@ -9,6 +9,9 @@
     #define TRUE (1)
 #endif
 
+#define STR_SIZE (254)
+typedef char string [STR_SIZE];
+
 /*
  * read file to char *
  */
@@ -56,9 +59,8 @@ static char* fileRead(const char *filename) {
 }
 
 #ifdef WIN32
-/* #include <winbase.h>*/
-#elif
-
+// #include <winbase.h>
+//#elif
 #endif
 
 static long fileCopy(const char *srcFileName, const char *dstFileName){
@@ -80,9 +82,9 @@ static void briefShowBaseAll(cJSON * configs, uint32_t configSize){
 }
 
 static void execSingleBaseConfig(cJSON * configs, uint32_t configSize, uint32_t idNum){
+    /* 1. Находим соответствующую idNum конфигурацию */
     cJSON * curConfig = NULL;
     for(uint32_t i=0;i<configSize;i++){
-        //Satellite sat={0};
         curConfig = cJSON_GetArrayItem(configs, i);
         cJSON * jID = cJSON_GetObjectItem(curConfig, "ID");
         int32_t curID = cJSON_GetNumberValue(jID);
@@ -101,9 +103,9 @@ static void execSingleBaseConfig(cJSON * configs, uint32_t configSize, uint32_t 
     /* 2. Форминеум соответствующую папку ИД - ConfigInOut */
     /*CopyFile(..., ..., 0/1): 0-перезапись, 1-только новый*/
     cJSON * param = cJSON_GetObjectItem(curConfig, "SC");
-    char name[256];
+    string name;
     strcpy(name, cJSON_GetStringValue(param));
-    char pathFrom[256], pathTo[256];
+    string pathFrom, pathTo;
     sprintf(pathFrom, "./scConfig/out42/SC_%s.txt", name);
     sprintf(pathTo, "./configInOut/SC_%s.txt", name);
     long
@@ -119,18 +121,32 @@ static void execSingleBaseConfig(cJSON * configs, uint32_t configSize, uint32_t 
 
 
     /* 4. Запускаем cmake и make */
-    system("dir");
-    char cmakePath[100] = "../42support";
-    char buildPath[100] = "../42support/build";
-    char winCmd[254];
-    sprintf(winCmd,
+    //system("dir");
+    string cmakePath = "../42support";
+    string buildPath = "../42support/build";
+    string cmd;
+    #ifndef WIN32
+    sprintf(cmd, "cmake -B %s %s ",
+    #elif
+    sprintf(cmd,
             "cmake -DEMULATOR=1 -G \"MinGW Makefiles\" -B %s %s ",
+    #endif
             buildPath, cmakePath);
-    system(winCmd);
-    sprintf(winCmd,
+    system(cmd);
+    #ifndef WIN32
+    sprintf(cmd, "make -C %s", buildPath);
+    #elif
+    sprintf(cmd,
             "mingw32-make -C %s", buildPath);
-    system(winCmd);
+    #endif
+
+    system(cmd);
+    #ifndef WIN32
+    system("../42/42twin configInOut ../42/Model");
+    #elif
     system("..\\42\\42twin.exe configInOut ..\\42\\Model");
+    #endif
+
     return;
 }
 
@@ -157,6 +173,7 @@ int main(int32_t argc, char** argv){
     //char * resTest = cJSON_Print(twBase);
     //printf("%s", resTest);
 
+    printf("Current directory is %s\n", argv[0]);
     if(isID){
         execSingleBaseConfig(configs, configSize, idNum);
     }
