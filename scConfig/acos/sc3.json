@@ -17,7 +17,7 @@
 	    ]
 	},
 	"Number of Star Trackers":{
-		"blocs":[
+		"blocks":[
 	        {"name": "ST","n": 1}
 	    ],
 	    "orientation":[

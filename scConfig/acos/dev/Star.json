@@ -1,0 +1,27 @@
+{
+	"template": {
+		"Sample": 0.2,
+		"Boresight": "Z",
+		"CommonFOV": {
+			 "type": "Circle",
+			 "h": 28.0,
+			 "v":28.0
+		 },
+		 "EclipseAng":{
+			 "Sun": 30.0,
+			 "Earth": 10.0,
+			 "Moon": 10.0
+	    },
+		"ComplexNoise":{
+			"boresight": 20.0,
+			"other": 2.0
+		}
+	},
+	"ST1": {
+		"Sample": 0.25,
+		"Boresight": "Z",
+		"H, V FOV Size, deg": "28.0   28.0",
+		"Sun, Earth, Moon Exclusion Angles, deg": "30.0  10.0  10.0",
+		"Noise Equivalent Angle": "2.0  2.0  20.0"
+	}
+}

@@ -7,7 +7,7 @@
 /*
  * read file to char *
  */
-static char* fileRead(const char *filename) {
+char* fileRead(const char *filename) {
     FILE *file = NULL;
     long length = 0;
     char *content = NULL;

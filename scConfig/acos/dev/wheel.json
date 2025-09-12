@@ -1,52 +1,52 @@
-{"wheels":[
-    {"name": "template",
-		 "torque": 0.0,
-		 "momentum": 0.0,
-		 "inertia": 0.0,
-		 "drag":
+{
+	"template": {
+		 "Torque (N-m), Momentum (N-m-sec)": "0.14    50.0",
+		 "Inertia": 0.025,
+		 "File": "NONE",
+		 "Drag Parameters":
 		     {"coulomb": 0.0,
 			  "stiction": 0.0,
 			  "viscous": 0.0,
 			  "stribeck": 0.0,
 			  "lugre": {"time": 0.0, "zone": 0.0}
 		     },
-	     "jitter":
+	     "Jitter Parameters":
 		     {"jtjr": 0.0,
 			  "vsPhase": 0.0,
 			  "vsPhase": 0.0,
 			  "lateral": {"mode": 0.0, "damping": 0.0},
 			  "rocking": {"mode": 0.0, "damping": 0.0}
 			 },
-		 "harmonics":
+		 "Harmonics":
 		     {"num": 2,
 			  "h":[{"number": 0.0, "static": 0.0, "dynamic": 0.0, "phase":0.0},
 				   {"number": 0.0, "static": 0.0, "dynamic": 0.0, "phase":0.0}
 			  ] 
 			 }
 	},
-	{"name": "example1",
-		 "torque": 0.0,
-		 "momentum": 0.0,
-		 "inertia": 0.0,
-		 "drag":
+	"example1": {
+		 "Torque (N-m), Momentum (N-m-sec)": "0.14   50.0",
+		 "Inertia": 0.05,
+		 "File": "NONE",
+		 "Drag Parameters":
 		     {"coulomb": 0.0,
 			  "stiction": 0.0,
 			  "viscous": 0.0,
 			  "stribeck": 0.0,
 			  "lugre": {"time": 0.0, "zone": 0.0}
 		     },
-	     "jitter":
+	     "Jitter Parameters":
 		     {"jtjr": 0.0,
 			  "vsPhase": 0.0,
 			  "vsPhase": 0.0,
 			  "lateral": {"mode": 0.0, "damping": 0.0},
 			  "rocking": {"mode": 0.0, "damping": 0.0}
 			 },
-		 "harmonics":
-		     {"num": 0,
-			  "h":[
+		 "Harmonics":
+		     {"num": 2,
+			  "h":[{"number": 0.0, "static": 0.0, "dynamic": 0.0, "phase":0.0},
+				   {"number": 0.0, "static": 0.0, "dynamic": 0.0, "phase":0.0}
 			  ] 
 			 }
 	}
- ]
 }
