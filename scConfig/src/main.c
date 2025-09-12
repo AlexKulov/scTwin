@@ -85,12 +85,8 @@ int main(int32_t argc, char** argv){
 
             //3. Парсим json
             cJSON * scJson = cJSON_Parse(scJsonFile);
-            FILE * sc42File = fopen(pathTo, "r");
             //scJson2Txt42(scJson, sc42File);
             scJson2Txt42(scJson, pathFrom, pathTo);
-            fclose(sc42File);
-
-
             //printf("%s", jsonExample);
         }
         else

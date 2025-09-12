@@ -81,6 +81,13 @@ static void briefShowBaseAll(cJSON * configs, uint32_t configSize){
 
 }
 
+void consolCopyRes(long copyRes, char * fileName){
+    if(copyRes)
+        printf("%s file copy is success!\n", fileName);
+    else
+        printf("%s file copy is error!\n", fileName);
+}
+
 static void execSingleBaseConfig(cJSON * configs, uint32_t configSize, uint32_t idNum){
     /* 1. Находим соответствующую idNum конфигурацию */
     cJSON * curConfig = NULL;
@@ -100,8 +107,9 @@ static void execSingleBaseConfig(cJSON * configs, uint32_t configSize, uint32_t 
         exit(1);
     }
 
-    /* 2. Форминеум соответствующую папку ИД - ConfigInOut */
+    /* 2. Формируем файлы в папку ИД - ConfigInOut */
     /*CopyFile(..., ..., 0/1): 0-перезапись, 1-только новый*/
+    /* 2.1 Формируем SC_%s.txt */
     cJSON * param = cJSON_GetObjectItem(curConfig, "SC");
     string name;
     strcpy(name, cJSON_GetStringValue(param));
@@ -110,43 +118,52 @@ static void execSingleBaseConfig(cJSON * configs, uint32_t configSize, uint32_t 
     sprintf(pathTo, "./configInOut/SC_%s.txt", name);
     long
     copyRes = fileCopy(pathFrom, pathTo);
+    consolCopyRes(copyRes, "SC");
 
+    /* 2.2 Формируем Orb_%s.txt */
     param = cJSON_GetObjectItem(curConfig, "Orb");
     strcpy(name, cJSON_GetStringValue(param));
     sprintf(pathFrom, "./scConfig/out42/Orb_%s.txt", name);
     sprintf(pathTo, "./configInOut/Orb_%s.txt", name);
     copyRes = fileCopy(pathFrom, pathTo);
+    consolCopyRes(copyRes, "Orb");
 
-    /* 3. Изменяем twin42.pro */
+    /* 2.3 Формируем Inp_Sim.txt */
 
+    long isProFileChange = FALSE;
+    //...
+    //...isProFileChange = TRUE;
+    //...
+    if(isProFileChange){//если изменяли файл проекта
+        /* 3. Изменяем twin42.pro */
 
-    /* 4. Запускаем cmake и make */
-    //system("dir");
-    string cmakePath = "../42support";
-    string buildPath = "../42support/build";
-    string cmd;
-    #ifndef WIN32
-    sprintf(cmd, "cmake -B %s %s ",
-    #elif
-    sprintf(cmd,
-            "cmake -DEMULATOR=1 -G \"MinGW Makefiles\" -B %s %s ",
-    #endif
-            buildPath, cmakePath);
-    system(cmd);
-    #ifndef WIN32
-    sprintf(cmd, "make -C %s", buildPath);
-    #elif
-    sprintf(cmd,
-            "mingw32-make -C %s", buildPath);
-    #endif
+        /* 4. Запускаем cmake и make */
+        //system("dir");
+        string cmakePath = "../42support";
+        string buildPath = "../42support/build";
+        string cmd;
+        #ifndef WIN32
+        sprintf(cmd, "cmake -B %s %s ",
+        #elif
+        sprintf(cmd,
+                "cmake -DEMULATOR=1 -G \"MinGW Makefiles\" -B %s %s ",
+        #endif
+                buildPath, cmakePath);
+        system(cmd);
+        #ifndef WIN32
+        sprintf(cmd, "make -C %s", buildPath);
+        #elif
+        sprintf(cmd,
+                "mingw32-make -C %s", buildPath);
+        #endif
 
-    system(cmd);
-    #ifndef WIN32
-    system("../42/42twin configInOut ../42/Model");
-    #elif
-    system("..\\42\\42twin.exe configInOut ..\\42\\Model");
-    #endif
-
+        system(cmd);
+        #ifndef WIN32
+        system("../42/42twin configInOut ../42/Model");
+        #elif
+        system("..\\42\\42twin.exe configInOut ..\\42\\Model");
+        #endif
+    }
     return;
 }
 
