@@ -22,17 +22,9 @@ static string devNameList[MAX_SC_PARAMS] = {
     "Star",//Star Tracker
     "Accel", //Accelerometer
     "Fine Guidance Sensor" //Fine Guidance Sensor
+    "Panel",
+    "Battery"
 };
-
-static string eqCurList[MAX_SC_PARAMS];
-
-#define N_ACT (3)
-static string actNames[N_ACT] = {
-    "wheel"
-    "MTB",
-    "Thr"
-};
-static uint8_t actFlag[N_ACT];
 
 #define N_SNS (7)
 string snsNames[N_SNS] = {
@@ -54,7 +46,7 @@ typedef enum{
 }PARAM_TYPE;
 
 //возвращает номер
-static string * checkNames(const char * str, string * arNames, uint8_t nAr){
+string * checkNames(const char * str, string * arNames, uint8_t nAr){
     char testStr[STR_SIZE] = {0};
     for(uint8_t i=0; i<nAr; i++){
         strcpy(testStr, arNames[i]);
@@ -127,20 +119,6 @@ static void setIntParam(char * newBuf, uint32_t iParam){
     sprintf(newBuf, "%i ! %s\n", iParam, desc);
 }
 
-static void setDblParam(char * newBuf, double dParam){
-    char param[STR_BUF_SIZE/2], desc[STR_BUF_SIZE/2];
-    sscanf(newBuf, "%s!%s", param, desc);
-    sprintf(param,"%lf ", dParam);
-    sprintf(newBuf, "%s !%s", param, desc);
-}
-
-static void setVecParam(char * newBuf, const double vParam[3]){
-    char param[STR_BUF_SIZE/2], desc[STR_BUF_SIZE/2];
-    sscanf(newBuf, "%s!%s", param, desc);
-    sprintf(param,"%lf %lf %lf ", vParam[0], vParam[1], vParam[2]);
-    sprintf(newBuf, "%s !%s", param, desc);
-}
-
 #define STR(x) #x
 static void setStrParam(char * newBuf, const char * str){
     char param[STR_BUF_SIZE/2]={0};
@@ -149,8 +127,62 @@ static void setStrParam(char * newBuf, const char * str){
     sprintf(newBuf, "%s ! %s\n", str, desc);
 }
 
-static void setDevicePosition(char * strAxis, cJSON * position){
+static long setAxis(char * strAxis, cJSON * position){
+    // Actuators:
+    // Wheel Axis Components, [X, Y, Z]
+    // MTB Axis Components, [X, Y, Z]
+    // Thrust Axis
 
+    // Sensors:
+    // Axis expressed in Body Frame
+
+    // Mounting Angles (deg), Seq in Body
+    // Boresight Axis X_AXIS, Y_AXIS, or Z_AXIS
+    if(position == NULL){
+        printf("Check your JSON. Orientation blocks id incorrect\n");
+        exit(1);
+    }
+
+    if(strstr(strAxis, "Boresight")){
+        cJSON * jsonMain = cJSON_GetObjectItem(position, "mainAxis");
+        char * mainAxis = cJSON_GetStringValue(jsonMain);
+        char mainAxis42[8] = {0};
+        sprintf(mainAxis42, "%c_AXIS", mainAxis[0]);
+        setStrParam(strAxis, mainAxis42);
+        return 1;
+    }
+    cJSON * jsonXYZ = cJSON_GetObjectItem(position, "mainAxisInBody");
+    double XYZ[3] = {cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "x")),
+                     cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "y")),
+                     cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "z"))};
+
+    char mainAxisXYZ[STR_BUF_SIZE/2]={0};
+    sprintf(mainAxisXYZ, "%f %f %f", XYZ[0], XYZ[1], XYZ[2]);
+    setStrParam(strAxis, mainAxisXYZ);
+    return 0;
+}
+
+static void setAngles(char * strAngle, cJSON * position){
+    // Mounting Angles (deg), Seq in Body
+    // Boresight Axis X_AXIS, Y_AXIS, or Z_AXIS
+    cJSON * jsonXYZ = cJSON_GetObjectItem(position, "mainAxisInBody");
+    double mainXYZ[3] = {cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "x")),
+                     cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "y")),
+                     cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "z"))};
+
+    jsonXYZ = cJSON_GetObjectItem(position, "secnAxisInBody");
+    double secnXYZ[3] = {cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "x")),
+                     cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "y")),
+                     cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "z"))};
+
+    // --------------- д.б. main и secn->angle и seq  ------------------------
+    double angle[3] = {0};
+    int seq = 123;
+    // ------------------------------------------------------------------------
+    char mountingAngles[STR_BUF_SIZE/2]={0};
+    sprintf(mountingAngles, "%f %f %f %i",
+            angle[0], angle[1], angle[2], seq);
+    setStrParam(strAngle, mountingAngles);
 }
 
 static char * jsonPrint(const cJSON * json){
@@ -181,13 +213,12 @@ static char * devicePrint(char * nextStrNewBuf, const char * curDevName, uint8_t
     return nextStrNewBuf;
 }
 
-
 extern char* fileRead(const char *filename);
-void scJson2Txt42(cJSON * scJson, char * tempName, char * outName){
+void scJson2Txt42(cJSON * scJson, char * tempName, char * outName, char * sysName){
     FILE * temp = fopen(tempName, "r");
     FILE * out  = fopen(outName,  "w");
     if(temp && out && scJson){
-        //1. Открываем файл шаблона и начинаем его переписывать в выход.
+        //1. Открываем файл шаблона и начинаем его переписывать в выход
         cJSON * curParam = scJson->child;
         uint16_t nParams = 0;
         string * pStr = NULL;
@@ -205,7 +236,7 @@ void scJson2Txt42(cJSON * scJson, char * tempName, char * outName){
                 strcpy(eqDB.name[size], curDevName);
                 eqDB.json[size] = curParam;
                 string devFileName = {0};
-                sprintf(devFileName, "./acos/dev/%s.json", curDevName);
+                sprintf(devFileName, "./%s/dev/%s.json", sysName, curDevName);
                 char * scJsonFile = fileRead(devFileName);
                 cJSON * devJson = cJSON_Parse(scJsonFile);
                 eqDB.devJson[size] = devJson;
@@ -230,7 +261,7 @@ void scJson2Txt42(cJSON * scJson, char * tempName, char * outName){
                 if(pStr){//заполняем newBuf!!! если попался Number of ...
                     strcpy(curDevName, *pStr);
                     //...1 считаем кол-во аппаратуры данного типа
-                    uint8_t nEq = getCommonDevNum(&eqDB, pStr);
+                    uint8_t nEq = getCommonDevNum(&eqDB, *pStr);
                     //...2 модифицируем строку с кол-вом аппаратуры
                     setIntParam(newBuf, nEq);
                     //...3 считать строку с индексом 0 прибора в буфер 0
@@ -273,27 +304,30 @@ void scJson2Txt42(cJSON * scJson, char * tempName, char * outName){
                         uint8_t dbI = getDbIndex(&eqDB, curDevName);
                         cJSON * actualDev = getJsonByName(eqDB.devJson[dbI], name);
                         cJSON * devParams = actualDev->child;
-                        char * testPStr = *pStr;
                         for(uint16_t i=0; devParams !=NULL &&
                                           i<MAX_SC_PARAMS; i++){
                             pStr = checkNames(devParams->string,
                                               devBuf, devBufSize);
-                            testPStr = *pStr;
                             if(pStr){
                                 //cJSON * curJson = getJsonByName(scJson, curParamName);
                                 char * jStr = jsonPrint(devParams);
-                                setStrParam(pStr, jStr);
+                                setStrParam(*pStr, jStr);
                             }
                             devParams = devParams->next;
                         }
-                        //...5.2 копируем  nDev с именем name
+                        //...5.2 копируем nDev приборов с именем name в newBuf
                         //...5.2.1 пропускаем строчку с общим числом БА
                         nextStrNewBuf = strstr(newBuf, "\n");
                         nextStrNewBuf++;
                         cJSON * orientation = getJsonByName(NumberOfDevice, "orientation");
                         for(;jDev<nDev; jDev++){
                             char * strAxis = *(checkNames("Axis", devBuf, devBufSize));
-                            setDevicePosition(strAxis, &orientation[jDev]);
+                            cJSON * iOrn = cJSON_GetArrayItem(orientation, jDev);
+                            long mustSetAngle = setAxis(strAxis, iOrn);
+                            if(mustSetAngle){
+                                char * strAngle = *(checkNames("Mounting Angles", devBuf, devBufSize));
+                                setAngles(strAngle, &orientation[jDev]);
+                            }
                             nextStrNewBuf = devicePrint(nextStrNewBuf, curDevName, jDev,
                                                         devBuf, devBufSize);
                         }

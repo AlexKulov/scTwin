@@ -64,8 +64,7 @@ static long fileCopy(const char *srcFileName, const char *dstFileName){
     return 0;
 }
 
-extern void scJson2Txt42(cJSON * scJson,
-                         char * tempName, char * outName);
+extern void scJson2Txt42(cJSON * scJson, char * tempName, char * outName, char * sysName);
 int main(int32_t argc, char** argv){
 
     //1. При запуске вводим имя файла, который хотим сконфигурировать
@@ -86,7 +85,8 @@ int main(int32_t argc, char** argv){
             //3. Парсим json
             cJSON * scJson = cJSON_Parse(scJsonFile);
             //scJson2Txt42(scJson, sc42File);
-            scJson2Txt42(scJson, pathFrom, pathTo);
+            scJson2Txt42(scJson, pathFrom, "acos", pathTo);
+            scJson2Txt42(scJson, pathFrom, "eps", pathTo);
             //printf("%s", jsonExample);
         }
         else

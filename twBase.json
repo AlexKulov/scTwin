@@ -1,14 +1,24 @@
 {
 	"configs": [
-	    {"ID":1 , "SC": "2Whl", "Orb": "LEO", "EPS": "EPS1", "OSW": "sc1", 
+	    {"ID":1 , 
+		 "SC": "2Whl", 
+		 "Orb": "LEO", 
+		 "EPS": "EPS1", 
+		 "OSW": "sc1", 
 		 "Sim": {"start": {"date": "21-10-2024", "time": "10:00:00.000", "unix": 1761040800},
                  "end":   {"date": "21-10-2024", "time": "18:00:00.000", "unix": 1761069600},
-			     "dt": 0.5}
+			     "dt": 0.5},
+	     "Result42": [] 
 		},
-		{"ID":2 , "SC": "Simple", "Orb": "LEO", "EPS": "EPS1", "OSW": "sc1", 
+		{"ID":2 , 
+		 "SC": "2Whl", 
+		 "Orb": "LEO", 
+		 "EPS": "EPS1", 
+		 "OSW": "sc1", 
 		 "Sim": {"start": {"date": "21-10-2024", "time": "10:00:00.000", "unix": 1761040800},
                  "end":   {"date": "21-10-2024", "time": "18:00:00.000", "unix": 1761069600},
-			     "dt": 0.5}
+			     "dt": 0.5},
+	     "Result42": [5]
 		}
 	]
 }
