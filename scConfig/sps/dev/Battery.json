@@ -1,0 +1,14 @@
+{
+	"LiIon1": {
+		"Capacity":        0.1,
+		"Self discharge":  1.0,
+		"Max I charge":    1.0,
+		"Max I discharge": 1.0
+	},
+	"LiIon2": {
+		"Capacity":        0.2,
+		"Self discharge":  5.0,
+		"Max I charge":    2.0,
+		"Max I discharge": 2.0
+	}
+}

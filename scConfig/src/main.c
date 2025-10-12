@@ -64,33 +64,36 @@ static long fileCopy(const char *srcFileName, const char *dstFileName){
     return 0;
 }
 
-extern void scJson2Txt42(cJSON * scJson, char * tempName, char * outName, char * sysName);
-int main(int32_t argc, char** argv){
+void system2Txt42(char * scLabel, char * systemName, char * tempName, char * outTxtName){
+    string  filePath;
+    sprintf(filePath, "./%s/%s.json", systemName, scLabel);
+    char * scJsonFile = fileRead(filePath);
+    if(scJsonFile){//1.1 если файл json существует
+        //2. Парсим json
+        cJSON * scJson = cJSON_Parse(scJsonFile);
+        //3. Копируем шаблон с нужным именем
+        string  tempFile;
+        sprintf(tempFile, "./out42/%s.txt", tempName);
+        string  out42File;
+        sprintf(out42File, "./out42/%s.txt" , outTxtName);
+        scJson2Txt42(scJson, tempFile, out42File, systemName);
+    }
+    else
+        printf("Json file name is incorrect = %s\n", filePath);
+}
 
+extern void scJson2Txt42(cJSON * scJson, char * tempName,
+                         char * outName, char * sysName);
+int main(int32_t argc, char** argv){
     //1. При запуске вводим имя файла, который хотим сконфигурировать
     if(argc>0){
-        string  filePath;
-        sprintf(filePath, "./acos/%s.json", argv[1]);
-        char * scJsonFile = fileRead(filePath); //"acos/dev/trackers.json"
+        string out42File = {0};
 
-        if(scJsonFile){//1.1 если файл json существует
-            //2. Копируем шаблон с нужным именем
-            string pathFrom, pathTo;
-            sprintf(pathFrom, "./out42/SC_Template.txt");
-            sprintf(pathTo  , "./out42/SC_%s.txt", argv[1]);
+        sprintf(out42File, "SC_%s" , argv[1]);
+        system2Txt42(argv[1], "acos", "SC_Template", out42File);
 
-            //long
-            //wasCopy = fileCopy(pathFrom, pathTo);
-
-            //3. Парсим json
-            cJSON * scJson = cJSON_Parse(scJsonFile);
-            //scJson2Txt42(scJson, sc42File);
-            scJson2Txt42(scJson, pathFrom, "acos", pathTo);
-            scJson2Txt42(scJson, pathFrom, "eps", pathTo);
-            //printf("%s", jsonExample);
-        }
-        else
-            printf("Json file name is incorrect = %s\n",argv[1]);
+        sprintf(out42File, "SPS_%s" , argv[1]);
+        system2Txt42(argv[1], "sps", "SPS_Simplest", out42File);
     }
     else
         printf("Please, enter json file name\n");

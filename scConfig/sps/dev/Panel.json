@@ -1,0 +1,12 @@
+{
+	"Panel1": {
+		 "Area": 1.0,
+		 "Result Coef": 0.23,
+		 "Min sun": 10.0
+	},
+	"Panel2": {
+		 "Area": 2.0,
+		 "Result Coef": 0.31,
+		 "Min sun": 7.5
+	}
+}

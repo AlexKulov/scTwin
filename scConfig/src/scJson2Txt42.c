@@ -21,7 +21,7 @@ static string devNameList[MAX_SC_PARAMS] = {
     "Fine",//Fine Sun Sensor
     "Star",//Star Tracker
     "Accel", //Accelerometer
-    "Fine Guidance Sensor" //Fine Guidance Sensor
+    "Fine Guidance Sensor", //Fine Guidance Sensor
     "Panel",
     "Battery"
 };
@@ -112,19 +112,15 @@ static uint8_t getCommonDevNum(const EqDataBase * eqDB, string devName){
     return commonNum;
 }
 
-static void setIntParam(char * newBuf, uint32_t iParam){
-    char param[STR_BUF_SIZE/2]={0};
-    char desc[STR_BUF_SIZE/2]={0};
-    sscanf(newBuf, "%[^!]!%[^\n]", param, desc);
-    sprintf(newBuf, "%i ! %s\n", iParam, desc);
-}
-
 #define STR(x) #x
 static void setStrParam(char * newBuf, const char * str){
     char param[STR_BUF_SIZE/2]={0};
     char desc[STR_BUF_SIZE/2]={0};
     sscanf(newBuf, "%[^!]!%[^\n]", param, desc);
-    sprintf(newBuf, "%s ! %s\n", str, desc);
+    int max    = strlen(param);
+    int maxSet = strnlen(str,max);
+    memset(&param[maxSet], ' ', max-maxSet);
+    sprintf(newBuf, "%s%s! %s\n", str, param+maxSet, desc);
 }
 
 static long setAxis(char * strAxis, cJSON * position){
@@ -157,7 +153,7 @@ static long setAxis(char * strAxis, cJSON * position){
                      cJSON_GetNumberValue(cJSON_GetObjectItem(jsonXYZ, "z"))};
 
     char mainAxisXYZ[STR_BUF_SIZE/2]={0};
-    sprintf(mainAxisXYZ, "%f %f %f", XYZ[0], XYZ[1], XYZ[2]);
+    sprintf(mainAxisXYZ, "%.5f %.5f %.5f", XYZ[0], XYZ[1], XYZ[2]);
     setStrParam(strAxis, mainAxisXYZ);
     return 0;
 }
@@ -180,7 +176,7 @@ static void setAngles(char * strAngle, cJSON * position){
     int seq = 123;
     // ------------------------------------------------------------------------
     char mountingAngles[STR_BUF_SIZE/2]={0};
-    sprintf(mountingAngles, "%f %f %f %i",
+    sprintf(mountingAngles, "%.5f %.5f %.5f %i",
             angle[0], angle[1], angle[2], seq);
     setStrParam(strAngle, mountingAngles);
 }
@@ -263,7 +259,9 @@ void scJson2Txt42(cJSON * scJson, char * tempName, char * outName, char * sysNam
                     //...1 считаем кол-во аппаратуры данного типа
                     uint8_t nEq = getCommonDevNum(&eqDB, *pStr);
                     //...2 модифицируем строку с кол-вом аппаратуры
-                    setIntParam(newBuf, nEq);
+                    char strNumDev[8]={0};
+                    sprintf(strNumDev, "%i", nEq);
+                    setStrParam(newBuf, strNumDev);
                     //...3 считать строку с индексом 0 прибора в буфер 0
                     char buf0[128]={0};
                     fscanf(temp, "%128[^\n]\n", buf0);
@@ -274,8 +272,12 @@ void scJson2Txt42(cJSON * scJson, char * tempName, char * outName, char * sysNam
                     char newDevSection[128]={0};
                     for(uint8_t i=0;i<MAX_SC_PARAMS;i++){
                         //.....построчная запись в буфер
-                        fgets(devBuf[i], STR_SIZE, temp);
-                        if((strstr(devBuf[i], "*****") ||
+                        char * resGet = fgets(devBuf[i], STR_SIZE, temp);
+                        if(!resGet){
+                            devBufSize = i;
+                            break;
+                        }
+                        else if((strstr(devBuf[i], "*****") ||
                             strstr(devBuf[i], "=====") )){
                             devBufSize = i;
                             if(strstr(devBuf[i], "*****")){
@@ -321,13 +323,17 @@ void scJson2Txt42(cJSON * scJson, char * tempName, char * outName, char * sysNam
                         nextStrNewBuf++;
                         cJSON * orientation = getJsonByName(NumberOfDevice, "orientation");
                         for(;jDev<nDev; jDev++){
+                            //...5.2.1.1 формируем ориентаицю элемента
                             char * strAxis = *(checkNames("Axis", devBuf, devBufSize));
-                            cJSON * iOrn = cJSON_GetArrayItem(orientation, jDev);
-                            long mustSetAngle = setAxis(strAxis, iOrn);
-                            if(mustSetAngle){
-                                char * strAngle = *(checkNames("Mounting Angles", devBuf, devBufSize));
-                                setAngles(strAngle, &orientation[jDev]);
+                            if(strAxis){
+                                cJSON * iOrn = cJSON_GetArrayItem(orientation, jDev);
+                                long mustSetAngle = setAxis(strAxis, iOrn);
+                                if(mustSetAngle){
+                                    char * strAngle = *(checkNames("Mounting Angles", devBuf, devBufSize));
+                                    setAngles(strAngle, &orientation[jDev]);
+                                }
                             }
+                            //...5.2.1.2 записываем информацию об очередном устройстве
                             nextStrNewBuf = devicePrint(nextStrNewBuf, curDevName, jDev,
                                                         devBuf, devBufSize);
                         }
@@ -354,6 +360,7 @@ void scJson2Txt42(cJSON * scJson, char * tempName, char * outName, char * sysNam
             fprintf(out, "%s", curBuf);
             strcpy(curBuf, newBuf);
        }
+       fprintf(out, "%s", curBuf);
        fclose(temp);
        fclose(out);
     }
