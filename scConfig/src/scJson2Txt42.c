@@ -2,16 +2,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "cJSON.h"
 
 #include "../sctwin.h"
 
-#define DESC_STR_MAX_42 (64)
-#define MAX_SC_PARAMS (20)
-#define STR_BUF_SIZE (2048)
-static string scParams[MAX_SC_PARAMS];
-const
-static string devNameList[MAX_SC_PARAMS] = {
+const string devNameList[MAX_SC_PARAMS] = {
     "wheel",
     "MTB",
     "Thr",
@@ -37,6 +31,8 @@ string snsNames[N_SNS] = {
     "Fine Guidance Sensor" //Fine Guidance Sensor
 };
 
+static string scParams[MAX_SC_PARAMS];
+
 typedef enum{
     NOTHING = 0,
     SC_PARAM,
@@ -45,7 +41,9 @@ typedef enum{
     ERROR
 }PARAM_TYPE;
 
-//возвращает номер
+/* Поиск в массиве строк размером nAr нужную строку str
+ * возвращает указатель на строку из массива
+ */
 string * checkNames(const char * str, string * arNames, uint8_t nAr){
     char testStr[STR_SIZE] = {0};
     for(uint8_t i=0; i<nAr; i++){
@@ -209,7 +207,6 @@ static char * devicePrint(char * nextStrNewBuf, const char * curDevName, uint8_t
     return nextStrNewBuf;
 }
 
-extern char* fileRead(const char *filename);
 void scJson2Txt42(cJSON * scJson, char * tempName, char * outName, char * sysName){
     FILE * temp = fopen(tempName, "r");
     FILE * out  = fopen(outName,  "w");
@@ -364,7 +361,7 @@ void scJson2Txt42(cJSON * scJson, char * tempName, char * outName, char * sysNam
        fclose(temp);
        fclose(out);
     }
-
-    //cJSON * wheels = cJSON_GetObjectItem(scJson, "wheels");
-    //uint32_t wheelSize = cJSON_GetArraySize(wheels);
+    else{
+        printf("Can't open %s or %s files \n", tempName, outName);
+    }
 }

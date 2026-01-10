@@ -9,6 +9,7 @@ INCLUDEPATH += \
 
 SOURCES += \
     ../cJSON/cJSON.c \
+    src/genConfigs.c \
     src/main.c \
     src/scJson2Txt42.c
 
