@@ -15,8 +15,14 @@
 #define MAX_DEV_OF_TYPE (8)
 
 typedef char string [STR_SIZE];
-extern const string devNameList[MAX_SC_PARAMS];
 
+
+extern char* fileRead(const char *filename);
+
+extern const string devNameList[MAX_SC_PARAMS];
 extern  cJSON * getJsonByName(const cJSON * json, const string name);
+extern  string * checkNames(const char * str, string * arNames, uint8_t nAr);
+extern void scJson2Txt42(cJSON * scJson, char * tempName,
+                         char * outName, char * sysName);
 
 #endif // SCTWIN_H

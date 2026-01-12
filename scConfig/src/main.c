@@ -82,9 +82,9 @@ void system2Txt42(char * scLabel, char * systemName, char * tempName, char * out
         printf("Json file name is incorrect = %s\n", filePath);
 }
 
-extern void scJson2Txt42(cJSON * scJson, char * tempName,
-                         char * outName, char * sysName);
+extern void testGenConfigs();
 int main(int32_t argc, char** argv){
+    testGenConfigs();
     //1. При запуске вводим имя файла, который хотим сконфигурировать
     if(argc>0){
         string out42File = {0};

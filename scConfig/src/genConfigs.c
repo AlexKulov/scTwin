@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "cJSON.h"
 
 #include "../sctwin.h"
 
@@ -14,6 +13,7 @@ typedef struct StrConfig{
 
 typedef struct SysConfig{
     StrConfig str[MAX_SC_PARAMS];
+    uint8_t size;
 }SysConfig;
 
 typedef struct DescDevType{
@@ -41,7 +41,7 @@ static void printConfig(SysConfig * c){
     }
 }
 
-static void genSysConfigsDS(SysConfig * nowSysConfig, Syslib * myLib){
+static void genSysConfigs(SysConfig * nowSysConfig, Syslib * myLib){
     uint32_t totalConfigs = 1;//возможное число конфигураций
     uint8_t deviceCount = 0; //количество строк устройств в конфигурации
     DescDevType * libStr[MAX_SC_PARAMS] = {NULL};//кол-во алтернатив для строки
@@ -89,7 +89,6 @@ static void genSysConfigsDS(SysConfig * nowSysConfig, Syslib * myLib){
     }
 }
 
-extern char* fileRead(const char *filename);
 static void createSysLib(char * systemName, Syslib * lib){
     char curDevName[STR_SIZE] = {0};
     uint8_t size = 0;
@@ -150,6 +149,7 @@ static void createSysConfig(char * sysName, char * confName, SysConfig * conf){
                     nStr++;
                 }
             }
+            conf->size = nStr;
         }
         else
             printf("createSysConfig: Can't json parse  %s file\n", sysConfFile);
@@ -158,22 +158,129 @@ static void createSysConfig(char * sysName, char * confName, SysConfig * conf){
         printf("createSysConfig: Can't open  %s file\n", sysConfFile);
 }
 
+static void setXyzJson(cJSON * subItem, double xyz[3]){
+    cJSON *
+    xyzJson = cJSON_CreateNumber(xyz[0]);
+    cJSON_AddItemToObject(subItem, "x", xyzJson);
+    xyzJson = cJSON_CreateNumber(xyz[1]);
+    cJSON_AddItemToObject(subItem, "y", xyzJson);
+    xyzJson = cJSON_CreateNumber(xyz[2]);
+    cJSON_AddItemToObject(subItem, "z", xyzJson);
+}
+
+static void createSysJson(SysConfig * conf, char * sysName, char * tempConfName){
+    string tempSysConfFile = {0};
+    sprintf(tempSysConfFile, "./%s/%s.json", sysName, tempConfName);
+    char * tempSysConf = fileRead(tempSysConfFile);
+    if(tempSysConf){
+        cJSON * tempJson = cJSON_Parse(tempSysConf);
+        if(tempJson){
+            char * resConvert;
+            for(uint8_t i=0; i<conf->size; i++){
+                cJSON * devType = getJsonByName(tempJson, conf->str[i].tName);
+                cJSON * blocks = NULL;
+                /* просто заменяем имя прибора в блоке */
+                if(devType){
+                    blocks = cJSON_GetObjectItem(devType, "blocks");
+                    cJSON * name = cJSON_GetObjectItem(
+                                   cJSON_GetArrayItem(blocks, 0), "name");
+                    char * dNameSet =
+                            cJSON_SetValuestring(name, conf->str[i].dName);
+                }
+                /* если прибора нет, то создаётся блок с этим устройством */
+                else{
+                    devType = cJSON_CreateObject();
+                    //blocks
+                    cJSON * blocks       = cJSON_AddArrayToObject(devType, "blocks");
+                    cJSON * orientation = cJSON_AddArrayToObject(devType, "orientation");
+                    cJSON * item        = cJSON_CreateObject();
+                    //{"name": "Panel1","n": 3}
+                    cJSON * subItem      = cJSON_CreateString(conf->str[i].dName);
+                    cJSON_AddItemToObject(item, "name", subItem);
+                            subItem      = cJSON_CreateNumber(conf->str[i].n);
+                    cJSON_AddItemToObject(item, "n", subItem);
+                    cJSON_AddItemToArray(blocks, item);
+                    for(uint8_t j=0; j<conf->str[i].n; j++){
+                        subItem = cJSON_CreateString("Z");
+                        item        = cJSON_CreateObject();
+                        cJSON_AddItemToObject(item, "mainAxis", subItem);
+
+                        double xyz[3] = {1, 0, 0};
+                        subItem = cJSON_CreateObject();
+                        setXyzJson(subItem, xyz);
+
+                        cJSON_AddItemToObject(item, "mainAxisInBody", subItem);
+                        xyz[0] = 0; xyz[1] = 0; xyz[2] = -1;
+                        subItem = cJSON_CreateObject();
+                        setXyzJson(subItem, xyz);
+
+                        cJSON_AddItemToObject(item, "secnAxisInBody", subItem);
+                        cJSON_AddItemToArray(orientation, item);
+                    }
+                    //char * devTypePrint = cJSON_Print(devType);
+                    //printf("\n%s\n", devTypePrint);
+                    string  devTypeName = {0};
+                    sprintf(devTypeName, "Number of %s", conf->str[i].tName);
+                    cJSON_AddItemToObject(tempJson, devTypeName, devType);
+                }
+                /***********************************************************/
+            }
+
+            cJSON * numberOf = tempJson->child;
+            long isTypeNameExist = 0;
+            /* удаляем блоки, если таких устройств нет в конфигурации */
+            for(uint8_t i=0; numberOf; i++){
+                if(strstr(numberOf->string, "Number of ")){
+                    isTypeNameExist = 0;
+                    for(uint8_t j=0; j<conf->size; j++){
+                        if(strstr(numberOf->string, conf->str[j].tName)){
+                            isTypeNameExist = 1;
+                            break;
+                        }
+                    }
+
+                    if(!isTypeNameExist){ //если не существует - выкидываем
+                        cJSON * delDev = numberOf;
+                        numberOf = numberOf->next;
+                        cJSON_DetachItemViaPointer(tempJson, delDev);
+                        cJSON_Delete(delDev);
+                    }
+                    else
+                        numberOf = numberOf->next;
+                }
+                else
+                    numberOf = numberOf->next;
+            }
+            /***********************************************************/
+            resConvert = cJSON_Print(tempJson);
+            printf("\n%s\n", resConvert);
+        }
+        else
+            printf("createSysJson: Can't json parse  %s file\n", tempSysConfFile);
+    }
+    else
+        printf("createSysJson: Can't open  %s file\n", tempSysConfFile);
+}
+
 void testGenConfigs(){
 
     char * systemName = "acos";
     Syslib sysLib;
     createSysLib(systemName, &sysLib);
-    SysConfig nowSysConfig;
+    //SysConfig nowSysConfig;
     char * confName = "sc2";
-    createSysConfig(systemName, confName, &nowSysConfig);
-    printConfig(&nowSysConfig);
-    /*SysConfig nowSysConfig = {
+    //createSysConfig(systemName, confName, &nowSysConfig);
+    //printConfig(&nowSysConfig);
+       SysConfig nowSysConfig = {
             .str[0].tName = "wheel", .str[0].dName = "UDM1", .str[0].n = 4,
             .str[1].tName = "Star" , .str[1].dName = "ST1" , .str[1].n = 2,
-            .str[2].tName = "Gyro" , .str[2].dName = "IMU1", .str[2].n = 2
+            .str[2].tName = "Gyro" , .str[2].dName = "IMU1", .str[2].n = 2,
+            .size = 3
         };
 
-    Syslib myLib = {
+       createSysJson(&nowSysConfig, systemName, confName);
+
+    /*Syslib myLib = {
         .str[0].tName = "wheel", .str[0].dName[0] = "UDM1", .str[0].dName[1] = "UDM2",
                                  .str[0].dName[2] = "UDM3", .str[0].dName[3] = "UDM4",
                                  .str[0].dName[4] = "UDM5", .str[0].n = 5,
@@ -194,5 +301,5 @@ void testGenConfigs(){
             printf("tName=%s, dName1=%s, ... n=%i\n",
                    sysLib.str[i].tName, sysLib.str[i].dName[0], sysLib.str[i].n);
     }
-    genSysConfigsDS(&nowSysConfig, &sysLib);
+    genSysConfigs(&nowSysConfig, &sysLib);
 }
